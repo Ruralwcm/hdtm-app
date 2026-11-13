@@ -1,0 +1,27 @@
+[
+  {
+    "hd_type": "Hoạt náo theo chủ đề",
+    "formula": "TBN*TT 20%*số ngày triển khai",
+    "note": " min uplift 5 triệu, max uplift 20 triệu"
+  },
+  {
+    "hd_type": "HC kết nối NCC",
+    "formula": "",
+    "note": ""
+  },
+  {
+    "hd_type": "HC kết nối cộng đồng",
+    "formula": "",
+    "note": ""
+  },
+  {
+    "hd_type": "GHHC Sinh nhật",
+    "formula": "TBN*2*số ngày triển khai",
+    "note": "min uplift 20 triệu, max uplift 50 triệu"
+  },
+  {
+    "hd_type": "HĐTM khác",
+    "formula": "Uplift 10%",
+    "note": ""
+  }
+]
