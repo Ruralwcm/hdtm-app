@@ -203,9 +203,14 @@ tbody tr:hover{background:#f8f9fc}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 .cal-day-label{text-align:center;font-size:.76rem;font-weight:700;color:var(--text2);padding:6px}
-.cal-cell{background:#fff;border-radius:var(--radius-sm);min-height:110px;padding:8px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.cal-cell{background:#fff;border-radius:var(--radius-sm);min-height:110px;padding:8px;box-shadow:var(--shadow);border:1px solid var(--border);cursor:pointer;transition:all .15s;position:relative}
+.cal-cell:hover{border-color:var(--navy-2);box-shadow:0 2px 12px rgba(26,60,110,.12)}
 .cal-cell.other-month{opacity:.35}
+.cal-cell.weekend{background:#fff5f5;border-color:#ffcdd2}
 .cal-cell .cal-date{font-size:.8rem;font-weight:700;margin-bottom:6px}
+.cal-cell.weekend .cal-date{color:#d71920}
+.cal-add-hint{font-size:.65rem;color:var(--text3);text-align:center;margin-top:6px;opacity:0;transition:opacity .15s}
+.cal-cell:hover .cal-add-hint{opacity:1}
 .cal-activity{
   font-size:.68rem;background:var(--bg);border-radius:5px;padding:3px 6px;margin-bottom:3px;
   cursor:pointer;border-left:3px solid var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
