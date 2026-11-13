@@ -298,15 +298,15 @@ function updateDatePreview() {
   }).join(' ');
   // Preview target for first selected store
   if (REG_TYPE_SELECTED && SELECTED_STORES.length > 0) {
-    const sap = SELECTED_STORES[0].sap;
-    const ct = computeTarget(sap, REG_TYPE_SELECTED, numDays);
-    document.getElementById('targetPreviewBox').innerHTML = `<div class="summary-box" style="margin-top:8px">
-      <div class="summary-row"><span class="label">TBN (PSD)</span><span class="value">${ct.tbn.toLocaleString('vi-VN')} đ</span></div>
-      <div class="summary-row"><span class="label">Doanh thu dự kiến / CH</span><span class="value" style="color:var(--green);font-size:1.1rem">${ct.target.toLocaleString('vi-VN')} đ</span></div>
-      <div class="summary-row"><span class="label">Uplift</span><span class="value">+${ct.uplift_pct}%</span></div>
-      <div class="summary-row"><span class="label">Công thức</span><span class="value">${ct.note}</span></div>
-      ${ct.minVal ? `<div class="summary-row"><span class="label">Min/Max</span><span class="value">${ct.minVal.toLocaleString('vi-VN')} - ${ct.maxVal.toLocaleString('vi-VN')} đ</span></div>` : ''}
-    </div>`;
+    const ct = computeTarget(SELECTED_STORES[0].sap, REG_TYPE_SELECTED, numDays);
+    document.getElementById('targetPreviewBox').innerHTML = `
+      <div class="summary-box" style="margin:0;padding:10px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.82rem">
+        <span style="color:var(--text2)">TBN:</span><b>${ct.tbn.toLocaleString('vi-VN')} đ</b>
+        <span style="color:var(--text2)">DT dự kiến/CH:</span><b style="color:var(--green);font-size:1rem">${ct.target.toLocaleString('vi-VN')} đ</b>
+        <span style="color:var(--text2)">Uplift:</span><b>+${ct.uplift_pct}%</b>
+        <span style="color:var(--text2)">Công thức:</span><span>${ct.note}</span>
+        ${ct.minVal ? `<span style="color:var(--text2)">Min–Max:</span><span>${ct.minVal.toLocaleString('vi-VN')} – ${ct.maxVal.toLocaleString('vi-VN')} đ</span>` : ''}
+      </div>`;
   }
 }
 
@@ -411,12 +411,9 @@ function selectType(code) {
   renderTypeCards();
   const t = ACTIVITY_TYPES.find(x => x.code === code);
   const rules = RULES.filter(r => r.type_code === code);
-  document.getElementById('typeDetailBox').innerHTML = `
-    <div class="card" style="background:var(--bg);box-shadow:none">
-      <div class="card-title">Quy định áp dụng — ${t.name}</div>
-      ${rules.map(r => `<div style="padding:6px 0;font-size:.84rem"><b>${r.rule_name}:</b> ${r.rule_value} <span style="color:var(--text2)">— ${r.description}</span></div>`).join('') || '<div style="color:var(--text3);font-size:.84rem">Chưa có rule riêng</div>'}
-      <div style="margin-top:8px;font-size:.84rem"><b>Uplift dự kiến:</b> +${t.uplift_benchmark}% so với SPD base</div>
-    </div>`;
+  document.getElementById('typeDetailBox').innerHTML = rules.length ? rules.map(r =>
+    `<span style="display:inline-block;background:var(--bg);border-radius:4px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.78rem"><b>${r.rule_name}:</b> ${r.rule_value}</span>`
+  ).join('') : '';
   updateDatePreview();
 }
 
