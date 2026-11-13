@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HĐTM Rural — Đăng Ký & Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#d71920;--red-light:#e53935;--navy:#1a3c6e;--navy-2:#2c4a8a;--gold:#ffc107;
+  --green:#1e8e4e;--amber:#F57F17;--orange:#E65100;--blue:#1976D2;--purple:#7B1FA2;
+  --bg:#f4f6fb;--white:#fff;--text:#1c2434;--text2:#6b7280;--text3:#9aa3b5;
+  --border:#e5e9f2;--shadow:0 1px 6px rgba(20,30,60,.06);--shadow-lg:0 4px 24px rgba(20,30,60,.12);
+  --radius:12px;--radius-sm:8px;--sidebar-w:240px;
+}
+html{font-size:15px}
+body{
+  font-family:'Be Vietnam Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  display:flex;
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#cbd3e1;border-radius:4px}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:var(--sidebar-w);background:linear-gradient(180deg,var(--navy),var(--navy-2));
+  color:#fff;position:fixed;top:0;left:0;bottom:0;z-index:200;
+  display:flex;flex-direction:column;transition:transform .25s;
+}
+.sidebar .brand{padding:20px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sidebar .brand .logo{width:38px;height:38px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--navy);font-size:15px;flex-shrink:0}
+.sidebar .brand h1{font-size:.95rem;font-weight:700;line-height:1.3}
+.sidebar .brand h1 span{display:block;font-size:.68rem;font-weight:400;opacity:.75}
+.nav{flex:1;overflow-y:auto;padding:12px 10px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;
+  color:rgba(255,255,255,.78);font-size:.87rem;font-weight:600;cursor:pointer;
+  margin-bottom:2px;transition:all .15s;white-space:nowrap;
+}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:var(--red);color:#fff}
+.nav-item .ic{font-size:1.05rem;width:20px;text-align:center}
+.nav-group-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,.4);padding:14px 12px 6px;font-weight:700}
+.sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.12);font-size:.72rem;color:rgba(255,255,255,.5)}
+
+/* ===== MAIN ===== */
+.main{flex:1;margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column}
+.topbar{
+  background:#fff;border-bottom:1px solid var(--border);padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;
+}
+.topbar h2{font-size:1.15rem;font-weight:700}
+.topbar .user-chip{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text2)}
+.menu-toggle{display:none;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--navy)}
+.content{padding:22px 24px;flex:1}
+.view{display:none}
+.view.active{display:block}
+
+/* ===== CARDS / KPI ===== */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:#fff;border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--navy)}
+.kpi-card.c-blue{border-color:var(--blue)}
+.kpi-card.c-green{border-color:var(--green)}
+.kpi-card.c-amber{border-color:var(--amber)}
+.kpi-card.c-red{border-color:var(--red)}
+.kpi-card.c-purple{border-color:var(--purple)}
+.kpi-card.c-orange{border-color:var(--orange)}
+.kpi-label{font-size:.75rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.02em;margin-bottom:6px}
+.kpi-value{font-size:1.65rem;font-weight:800;color:var(--text)}
+.kpi-sub{font-size:.75rem;color:var(--text3);margin-top:3px}
+
+.card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+.card-title{font-size:.95rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.charts-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+.charts-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+canvas{max-height:280px}
+
+/* ===== FILTER BAR ===== */
+.filter-bar{
+  display:flex;flex-wrap:wrap;gap:10px;background:#fff;border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow);align-items:flex-end;
+}
+.filter-item{display:flex;flex-direction:column;gap:4px;min-width:120px}
+.filter-item label{font-size:.7rem;color:var(--text2);font-weight:600;text-transform:uppercase}
+.filter-item select,.filter-item input{
+  padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:.85rem;font-family:inherit;background:#fff;color:var(--text);
+}
+.filter-item select:focus,.filter-item input:focus{outline:none;border-color:var(--navy)}
+.btn{
+  padding:9px 18px;border-radius:var(--radius-sm);border:none;font-weight:700;font-size:.85rem;
+  cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:var(--red);color:#fff}
+.btn-primary:hover{background:var(--red-light)}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:#eceff5}
+.btn-success{background:var(--green);color:#fff}
+.btn-sm{padding:5px 10px;font-size:.75rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);background:#fff;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead th{
+  background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-weight:700;
+  position:sticky;top:0;white-space:nowrap;font-size:.76rem;text-transform:uppercase;letter-spacing:.02em;
+}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr:hover{background:#f8f9fc}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.badge-draft{background:#eceff5;color:#6b7280}
+.badge-registered{background:#e3f2fd;color:#1976D2}
+.badge-approved{background:#e8f5e9;color:#2e7d32}
+.badge-planned{background:#fff3e0;color:#E65100}
+.badge-inprogress{background:#fff8e1;color:#F57F17}
+.badge-completed{background:#e8f5e9;color:#1e8e4e}
+.badge-cancelled{background:#ffebee;color:#c62828}
+.badge-replaced{background:#f3e5f5;color:#7B1FA2}
+.badge-overdue{background:#ffebee;color:#d71920}
+.action-icons{display:flex;gap:4px}
+.icon-btn{
+  width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .15s;
+}
+.icon-btn:hover{background:var(--bg);border-color:var(--navy)}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:.8rem;color:var(--text2)}
+.page-controls{display:flex;gap:6px;align-items:center}
+
+/* ===== STEPS (REGISTRATION) ===== */
+.steps-nav{display:flex;margin-bottom:20px;background:#fff;border-radius:var(--radius);padding:4px;box-shadow:var(--shadow)}
+.step-tab{
+  flex:1;text-align:center;padding:12px 8px;border-radius:9px;font-size:.82rem;font-weight:700;
+  color:var(--text2);cursor:pointer;transition:all .15s;
+}
+.step-tab.active{background:var(--navy);color:#fff}
+.step-tab.done{color:var(--green)}
+.step-panel{display:none}
+.step-panel.active{display:block}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:.78rem;font-weight:600;color:var(--text2)}
+.form-group select,.form-group input,.form-group textarea{
+  padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:.86rem;font-family:inherit;background:#fff;
+}
+.form-group select:focus,.form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--navy)}
+.step-actions{display:flex;justify-content:space-between;margin-top:18px}
+
+.store-search-box{position:relative;margin-bottom:12px}
+.store-search-box input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem}
+.store-list{max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.store-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.store-row:hover{background:var(--bg)}
+.store-row:last-child{border-bottom:none}
+.store-row input[type=checkbox]{width:16px;height:16px;cursor:pointer}
+.store-row .s-info{flex:1;min-width:0}
+.store-row .s-name{font-weight:600;font-size:.85rem}
+.store-row .s-meta{font-size:.74rem;color:var(--text2)}
+.selected-stores-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border-radius:20px;padding:5px 10px 5px 12px;font-size:.78rem;margin:3px}
+.selected-stores-chip button{background:none;border:none;cursor:pointer;color:var(--text2);font-size:.9rem}
+
+.type-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.type-card{border:2px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .15s}
+.type-card:hover{border-color:var(--navy-2)}
+.type-card.selected{border-color:var(--red);background:#fff5f5}
+.type-card .t-name{font-weight:700;font-size:.92rem;margin-bottom:6px}
+.type-card .t-meta{font-size:.76rem;color:var(--text2);line-height:1.6}
+
+.warning-box{background:#fff3e0;border:1px solid #ffcc80;border-radius:var(--radius-sm);padding:12px 14px;font-size:.84rem;color:#E65100;margin-bottom:12px;display:flex;gap:8px;align-items:flex-start}
+.warning-box.danger{background:#ffebee;border-color:#ef9a9a;color:#c62828}
+.warning-box.success{background:#e8f5e9;border-color:#a5d6a7;color:#1e8e4e}
+
+.summary-box{background:var(--bg);border-radius:var(--radius);padding:16px}
+.summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.86rem}
+.summary-row:last-child{border-bottom:none}
+.summary-row .label{color:var(--text2)}
+.summary-row .value{font-weight:700}
+
+/* ===== MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(20,30,60,.5);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:var(--radius);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-header h3{font-size:1.05rem;font-weight:700}
+.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text2)}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:7px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.timeline-item{position:relative;padding-bottom:18px}
+.timeline-item::before{content:'';position:absolute;left:-24px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 0 0 2px var(--border)}
+.timeline-item .ti-head{font-weight:700;font-size:.84rem}
+.timeline-item .ti-time{font-size:.72rem;color:var(--text3);margin:2px 0 4px}
+.timeline-item .ti-detail{font-size:.8rem;color:var(--text2);background:var(--bg);padding:8px 10px;border-radius:8px;margin-top:4px}
+
+/* ===== CALENDAR ===== */
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cal-day-label{text-align:center;font-size:.76rem;font-weight:700;color:var(--text2);padding:6px}
+.cal-cell{background:#fff;border-radius:var(--radius-sm);min-height:110px;padding:8px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.cal-cell.other-month{opacity:.35}
+.cal-cell .cal-date{font-size:.8rem;font-weight:700;margin-bottom:6px}
+.cal-activity{
+  font-size:.68rem;background:var(--bg);border-radius:5px;padding:3px 6px;margin-bottom:3px;
+  cursor:pointer;border-left:3px solid var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
+.empty-state .ic{font-size:3rem;margin-bottom:10px}
+.loading-state{text-align:center;padding:40px;color:var(--text2)}
+
+@media(max-width:1000px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.show{transform:translateX(0)}
+  .main{margin-left:0}
+  .menu-toggle{display:block}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-grid,.charts-grid2{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:repeat(2,1fr)}
+  .type-card-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="logo">HT</div>
+    <h1>HĐTM Rural<span>Đăng ký & Tracking</span></h1>
+  </div>
+  <div class="nav" id="navMenu">
+    <div class="nav-item active" data-view="dashboard"><span class="ic">📊</span> Dashboard</div>
+    <div class="nav-item" data-view="register"><span class="ic">📝</span> Đăng ký HĐTM</div>
+    <div class="nav-item" data-view="calendar"><span class="ic">📅</span> Lịch triển khai</div>
+    <div class="nav-item" data-view="tracking"><span class="ic">📋</span> Tracking</div>
+    <div class="nav-item" data-view="recap"><span class="ic">📈</span> Recap / Tổng kết</div>
+    <div class="nav-item" data-view="target"><span class="ic">🎯</span> Target</div>
+    <div class="nav-group-label">Master Data</div>
+    <div class="nav-item" data-view="master-store"><span class="ic">🏬</span> Store</div>
+    <div class="nav-item" data-view="master-type"><span class="ic">🏷️</span> Loại HĐTM</div>
+    <div class="nav-item" data-view="master-rule"><span class="ic">⚖️</span> Rule</div>
+    <div class="nav-group-label">Hệ thống</div>
+    <div class="nav-item" data-view="audit"><span class="ic">🧾</span> Audit Log</div>
+    <div class="nav-item" data-view="settings"><span class="ic">⚙️</span> Setting</div>
+  </div>
+  <div class="sidebar-footer">v1.0 · WinMart+ Rural</div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <h2 id="viewTitle">Dashboard</h2>
+    </div>
+    <div class="user-chip">
+      <span id="userRole">👤 QLKV</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ========== DASHBOARD ========== -->
+    <div class="view active" id="view-dashboard">
+      <div class="filter-bar">
+        <div class="filter-item"><label>Tháng</label><select id="dbMonth"></select></div>
+        <div class="filter-item"><label>Miền</label><select id="dbMien"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>QLKV</label><select id="dbQlkv"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>GĐV</label><select id="dbGdv"><option value="">Tất cả</option></select></div>
+        <button class="btn btn-primary" onclick="loadDashboard()">🔍 Lọc</button>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card c-blue"><div class="kpi-label">Tổng số CH</div><div class="kpi-value" id="kpiTotalCH">0</div><div class="kpi-sub">cửa hàng đang hoạt động</div></div>
+        <div class="kpi-card"><div class="kpi-label">Target HĐTM</div><div class="kpi-value" id="kpiTarget">0</div><div class="kpi-sub">lượt kế hoạch tháng</div></div>
+        <div class="kpi-card c-amber"><div class="kpi-label">Đã đăng ký</div><div class="kpi-value" id="kpiRegistered">0</div><div class="kpi-sub" id="kpiRegisteredPct">0% target</div></div>
+        <div class="kpi-card c-purple"><div class="kpi-label">Đã triển khai</div><div class="kpi-value" id="kpiDeployed">0</div><div class="kpi-sub" id="kpiDeployedPct">0% target</div></div>
+        <div class="kpi-card c-green"><div class="kpi-label">Hoàn thành</div><div class="kpi-value" id="kpiCompleted">0</div><div class="kpi-sub" id="kpiCompletedPct">0% target</div></div>
+        <div class="kpi-card c-green"><div class="kpi-label">Tỷ lệ hoàn thành</div><div class="kpi-value" id="kpiCompleteRate">0%</div><div class="kpi-sub">/ tổng đăng ký</div></div>
+        <div class="kpi-card c-orange"><div class="kpi-label">Uplift dự kiến</div><div class="kpi-value" id="kpiUpliftPlan">0%</div><div class="kpi-sub">trung bình</div></div>
+        <div class="kpi-card c-red"><div class="kpi-label">Uplift thực tế</div><div class="kpi-value" id="kpiUpliftActual">0%</div><div class="kpi-sub">trung bình</div></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-title">Tiến độ đăng ký: Target vs Registered vs Completed</div>
+          <canvas id="chartProgress"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Theo loại HĐTM</div>
+          <canvas id="chartByType"></canvas>
+        </div>
+      </div>
+
+      <div class="charts-grid2">
+        <div class="card">
+          <div class="card-title">Theo tuần (W1 → W5)</div>
+          <canvas id="chartByWeek"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Top QLKV thiếu Target</div>
+          <div class="table-wrap" style="box-shadow:none">
+            <table>
+              <thead><tr><th>QLKV</th><th>Target</th><th>Đăng ký</th><th>% HT</th></tr></thead>
+              <tbody id="tblTopQlkv"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tổng hợp theo GĐV</div>
+        <div class="table-wrap" style="box-shadow:none">
+          <table>
+            <thead><tr><th>GĐV</th><th>Target</th><th>Đăng ký</th><th>Triển khai</th><th>Hoàn thành</th><th>% HT</th></tr></thead>
+            <tbody id="tblByGdv"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== REGISTER ========== -->
+    <div class="view" id="view-register">
+      <div class="steps-nav">
+        <div class="step-tab active" data-step="1">1. Thời gian</div>
+        <div class="step-tab" data-step="2">2. Phạm vi</div>
+        <div class="step-tab" data-step="3">3. Cửa hàng</div>
+        <div class="step-tab" data-step="4">4. HĐTM</div>
+        <div class="step-tab" data-step="5">5. Xác nhận</div>
+      </div>
+
+      <div class="card">
+        <!-- STEP 1 -->
+        <div class="step-panel active" id="step-1">
+          <div class="form-grid">
+            <div class="form-group"><label>Tháng</label><select id="regMonth"></select></div>
+            <div class="form-group"><label>Tuần</label><select id="regWeek"></select></div>
+            <div class="form-group"><label>Ngày triển khai</label><select id="regDay"></select></div>
+          </div>
+          <div class="step-actions"><span></span><button class="btn btn-primary" onclick="goStep(2)">Tiếp theo →</button></div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="step-panel" id="step-2">
+          <div class="form-grid">
+            <div class="form-group"><label>Miền</label><select id="regMien"><option value="">— Tất cả —</option></select></div>
+            <div class="form-group"><label>Tỉnh</label><select id="regTinh"><option value="">— Tất cả —</option></select></div>
+            <div class="form-group"><label>Huyện</label><select id="regHuyen"><option value="">— Tất cả —</option></select></div>
+            <div class="form-group"><label>QLKV</label><select id="regQlkv"><option value="">— Tất cả —</option></select></div>
+            <div class="form-group"><label>GĐV</label><select id="regGdv"><option value="">— Tất cả —</option></select></div>
+          </div>
+          <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(1)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(3)">Tiếp theo →</button></div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="step-panel" id="step-3">
+          <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+            <button class="btn btn-secondary btn-sm" onclick="selectAllFiltered()">☑️ Chọn tất cả (lọc hiện tại)</button>
+            <button class="btn btn-secondary btn-sm" onclick="clearSelectedStores()">🗑️ Bỏ chọn hết</button>
+            <span style="margin-left:auto;font-size:.85rem;color:var(--text2);align-self:center" id="selectedCount">Đã chọn: 0</span>
+          </div>
+          <div class="store-search-box">
+            <input type="text" id="storeSearch" placeholder="🔍 Tìm theo mã SAP hoặc tên cửa hàng..." oninput="renderStoreList()">
+          </div>
+          <div class="store-list" id="storeList"></div>
+          <div id="selectedStoresChips" style="margin-top:12px"></div>
+          <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(2)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(4)">Tiếp theo →</button></div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="step-panel" id="step-4">
+          <div class="type-card-grid" id="typeCardGrid"></div>
+          <div id="typeDetailBox" style="margin-top:16px"></div>
+          <div class="form-grid" style="margin-top:16px">
+            <div class="form-group" style="grid-column:span 2"><label>Ghi chú</label><input type="text" id="regNote" placeholder="Ghi chú thêm (không bắt buộc)"></div>
+          </div>
+          <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(3)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(5)">Tiếp theo →</button></div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="step-panel" id="step-5">
+          <div id="validationWarnings"></div>
+          <div class="summary-box" id="regSummary"></div>
+          <div class="step-actions">
+            <button class="btn btn-secondary" onclick="goStep(4)">← Quay lại</button>
+            <button class="btn btn-primary" id="btnSubmitReg" onclick="submitRegistration()">✅ ĐĂNG KÝ HOẠT ĐỘNG</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CALENDAR ========== -->
+    <div class="view" id="view-calendar">
+      <div class="cal-header">
+        <button class="btn btn-secondary btn-sm" onclick="calPrevMonth()">← Tháng trước</button>
+        <h3 id="calMonthLabel">Tháng 11/2026</h3>
+        <button class="btn btn-secondary btn-sm" onclick="calNextMonth()">Tháng sau →</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- ========== TRACKING ========== -->
+    <div class="view" id="view-tracking">
+      <div class="filter-bar">
+        <div class="filter-item"><label>Tháng</label><select id="trMonth"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>Tuần</label><select id="trWeek"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>Miền</label><select id="trMien"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>QLKV</label><select id="trQlkv"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>GĐV</label><select id="trGdv"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>Loại HĐTM</label><select id="trType"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>Trạng thái</label><select id="trStatus"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>Tìm CH</label><input type="text" id="trSearch" placeholder="Mã SAP / tên CH"></div>
+        <button class="btn btn-primary" onclick="loadTracking(1)">🔍 Lọc</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Activity ID</th><th>SAP</th><th>Cửa hàng</th><th>QLKV</th><th>GĐV</th>
+              <th>HĐTM</th><th>Tuần</th><th>Ngày</th><th>Target</th><th>Actual</th>
+              <th>Uplift</th><th>Trạng thái</th><th>Người ĐK</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="trackingBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span id="trCount">0 hoạt động</span>
+        <div class="page-controls">
+          <button class="icon-btn" onclick="trPrevPage()">‹</button>
+          <span id="trPageLabel">1/1</span>
+          <button class="icon-btn" onclick="trNextPage()">›</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== RECAP ========== -->
+    <div class="view" id="view-recap">
+      <div class="filter-bar">
+        <div class="filter-item"><label>Tháng</label><select id="rcMonth"></select></div>
+        <div class="filter-item"><label>Tuần</label><select id="rcWeek"><option value="">Cả tháng</option></select></div>
+        <div class="filter-item"><label>Miền</label><select id="rcMien"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>QLKV</label><select id="rcQlkv"><option value="">Tất cả</option></select></div>
+        <div class="filter-item"><label>GĐV</label><select id="rcGdv"><option value="">Tất cả</option></select></div>
+        <button class="btn btn-primary" onclick="loadRecap()">🔍 Lọc</button>
+        <button class="btn btn-success" onclick="exportRecapExcel()">⬇️ Export Excel</button>
+        <button class="btn btn-secondary" onclick="exportRecapPDF()">🖨️ Export PDF</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>HĐTM</th><th>#CH</th><th>Target</th><th>Đăng ký</th><th>Đã triển khai</th><th>Hoàn thành</th><th>% HT</th><th>Uplift TB</th></tr></thead>
+          <tbody id="recapBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== TARGET ========== -->
+    <div class="view" id="view-target">
+      <div class="card">
+        <div class="card-title">Quản lý Target <button class="btn btn-primary btn-sm" onclick="openTargetModal()">+ Thêm Target</button></div>
+        <div class="table-wrap" style="box-shadow:none">
+          <table>
+            <thead><tr><th>Tháng</th><th>Tuần</th><th>QLKV</th><th>GĐV</th><th>Loại HĐTM</th><th>SL CH</th><th>SL lượt</th><th>Ghi chú</th><th>Action</th></tr></thead>
+            <tbody id="targetBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MASTER STORE ========== -->
+    <div class="view" id="view-master-store">
+      <div class="filter-bar">
+        <div class="filter-item" style="flex:1"><label>Tìm kiếm</label><input type="text" id="msStoreSearch" placeholder="Mã SAP / tên CH / QLKV / GĐV" oninput="renderMasterStore()"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mã SAP</th><th>Tên cửa hàng</th><th>Tình trạng</th><th>Miền</th><th>Tỉnh</th><th>Huyện</th><th>QLKV</th><th>GĐV</th><th>Nhóm DT</th></tr></thead>
+          <tbody id="masterStoreBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination"><span id="msStoreCount"></span></div>
+    </div>
+
+    <!-- ========== MASTER TYPE ========== -->
+    <div class="view" id="view-master-type">
+      <div class="card">
+        <div class="card-title">Master Loại HĐTM <button class="btn btn-primary btn-sm" onclick="openTypeModal()">+ Thêm loại</button></div>
+        <div class="table-wrap" style="box-shadow:none">
+          <table>
+            <thead><tr><th>Mã</th><th>Tên HĐTM</th><th>Chu kỳ target</th><th>Số ngày/lượt</th><th>Uplift benchmark</th><th>Màu</th><th>Trạng thái</th><th>Action</th></tr></thead>
+            <tbody id="typeMasterBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MASTER RULE ========== -->
+    <div class="view" id="view-master-rule">
+      <div class="card">
+        <div class="card-title">Master Rule triển khai <button class="btn btn-primary btn-sm" onclick="openRuleModal()">+ Thêm rule</button></div>
+        <div class="table-wrap" style="box-shadow:none">
+          <table>
+            <thead><tr><th>Loại HĐTM</th><th>Tên rule</th><th>Giá trị</th><th>Mô tả</th><th>Action</th></tr></thead>
+            <tbody id="ruleMasterBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== AUDIT LOG ========== -->
+    <div class="view" id="view-audit">
+      <div class="filter-bar">
+        <div class="filter-item"><label>Activity ID</label><input type="text" id="auditActId" placeholder="ACT-000001"></div>
+        <button class="btn btn-primary" onclick="loadAudit()">🔍 Lọc</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Activity ID</th><th>Hành động</th><th>Người thực hiện</th><th>Thời gian</th><th>Trước</th><th>Sau</th><th>Lý do</th></tr></thead>
+          <tbody id="auditBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== SETTINGS ========== -->
+    <div class="view" id="view-settings">
+      <div class="card">
+        <div class="card-title">Cấu hình GAS</div>
+        <div class="form-group" style="max-width:600px">
+          <label>GAS Web App URL</label>
+          <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+          <button class="btn btn-primary" style="margin-top:10px;width:fit-content" onclick="saveGasUrl()">💾 Lưu</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Vai trò hiện tại (demo)</div>
+        <select id="roleSelector" onchange="changeRole()">
+          <option value="admin">Admin — Toàn quyền</option>
+          <option value="manager">Manager — Toàn vùng</option>
+          <option value="qlkv">QLKV — Phạm vi của mình</option>
+          <option value="gdv">GĐV — CH phụ trách</option>
+          <option value="viewer">Viewer — Chỉ xem</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: Activity Detail / Edit / Replace / History -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Chi tiết hoạt động</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
