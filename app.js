@@ -421,14 +421,12 @@ function updateSelectedCount() {
 function renderTypeCards() {
   const grid = document.getElementById('typeCardGrid');
   if (!grid) return;
+  const icons = { HN_CD: '🎪', HC_NCC: '🤝', HC_CD: '🏘️', GHHC_SN: '🎂', HDTM_KHAC: '📋' };
   grid.innerHTML = ACTIVITY_TYPES.filter(t => String(t.active).toUpperCase() !== 'FALSE').map(t => `
-    <div class="type-card ${REG_TYPE_SELECTED===t.code?'selected':''}" onclick="selectType('${t.code}')" style="border-left:4px solid ${t.color||'#1a3c6e'}">
-      <div class="t-name">${t.name}</div>
-      <div class="t-meta">
-        Chu kỳ: ${t.target_type==='weekly'?'Tuần':'Tháng'}<br>
-        Số ngày/lượt: ${t.days_per}<br>
-        Uplift benchmark: +${t.uplift_benchmark}%
-      </div>
+    <div class="type-card ${REG_TYPE_SELECTED===t.code?'selected':''}" onclick="selectType('${t.code}')">
+      <span class="t-icon">${icons[t.code]||'📌'}</span>
+      <span class="t-name">${t.name}</span>
+      <span class="t-tag">${t.target_type==='weekly'?'Hàng tuần':'Hàng tháng'} · +${t.uplift_benchmark}%</span>
     </div>`).join('');
 }
 function selectType(code) {
