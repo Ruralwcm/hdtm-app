@@ -299,13 +299,15 @@ function updateDatePreview() {
   // Preview target for first selected store
   if (REG_TYPE_SELECTED && SELECTED_STORES.length > 0) {
     const ct = computeTarget(SELECTED_STORES[0].sap, REG_TYPE_SELECTED, numDays);
-    document.getElementById('targetPreviewBox').innerHTML = `
-      <div class="summary-box" style="margin:0;padding:10px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.82rem">
-        <span style="color:var(--text2)">TBN:</span><b>${ct.tbn.toLocaleString('vi-VN')} đ</b>
-        <span style="color:var(--text2)">DT dự kiến/CH:</span><b style="color:var(--green);font-size:1rem">${ct.target.toLocaleString('vi-VN')} đ</b>
-        <span style="color:var(--text2)">Uplift:</span><b>+${ct.uplift_pct}%</b>
-        <span style="color:var(--text2)">Công thức:</span><span>${ct.note}</span>
-        ${ct.minVal ? `<span style="color:var(--text2)">Min–Max:</span><span>${ct.minVal.toLocaleString('vi-VN')} – ${ct.maxVal.toLocaleString('vi-VN')} đ</span>` : ''}
+    document.getElementById('targetPreviewBox').innerHTML = !ct.tbn ? `<div style="color:var(--text3);font-style:italic;padding:20px">Chưa có dữ liệu PSD cho CH này</div>` : `
+      <div class="summary-box" style="margin:0;padding:12px 14px;font-size:.82rem;line-height:1.7">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 12px">
+          <span style="color:var(--text2)">TBN (PSD):</span><b>${ct.tbn.toLocaleString('vi-VN')} đ</b>
+          <span style="color:var(--text2)">DT dự kiến / CH:</span><b style="color:var(--green);font-size:1.05rem">${ct.target.toLocaleString('vi-VN')} đ</b>
+          <span style="color:var(--text2)">Uplift:</span><b>+${ct.uplift_pct}%</b>
+          <span style="color:var(--text2)">Công thức:</span><span>${ct.note}</span>
+          ${ct.minVal ? `<span style="color:var(--text2)">Min–Max:</span><span>${ct.minVal.toLocaleString('vi-VN')} – ${ct.maxVal.toLocaleString('vi-VN')} đ</span>` : ''}
+        </div>
       </div>`;
   }
 }
