@@ -185,6 +185,7 @@ tbody tr:hover{background:#f8f9fc}
 .modal-overlay{position:fixed;inset:0;background:rgba(20,30,60,.5);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
 .modal-overlay.show{display:flex}
 .modal{background:#fff;border-radius:var(--radius);max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal.reg-modal{max-width:800px;max-height:92vh}
 .modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .modal-header h3{font-size:1.05rem;font-weight:700}
 .modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text2)}
@@ -242,7 +243,7 @@ tbody tr:hover{background:#f8f9fc}
   </div>
   <div class="nav" id="navMenu">
     <div class="nav-item active" data-view="dashboard"><span class="ic">📊</span> Dashboard</div>
-    <div class="nav-item" data-view="register"><span class="ic">📝</span> Đăng ký HĐTM</div>
+    
     <div class="nav-item" data-view="calendar"><span class="ic">📅</span> Lịch triển khai</div>
     <div class="nav-item" data-view="tracking"><span class="ic">📋</span> Tracking</div>
     <div class="nav-item" data-view="recap"><span class="ic">📈</span> Recap / Tổng kết</div>
@@ -331,71 +332,72 @@ tbody tr:hover{background:#f8f9fc}
       </div>
     </div>
 
-    <!-- ========== REGISTER ========== -->
-    <div class="view" id="view-register">
-      <div class="steps-nav">
-        <div class="step-tab active" data-step="1">1. Thời gian</div>
-        <div class="step-tab" data-step="2">2. Phạm vi</div>
-        <div class="step-tab" data-step="3">3. Cửa hàng</div>
-        <div class="step-tab" data-step="4">4. HĐTM</div>
-        <div class="step-tab" data-step="5">5. Xác nhận</div>
-      </div>
-
-      <div class="card">
-        <!-- STEP 1 -->
-        <div class="step-panel active" id="step-1">
-          <div class="form-grid">
-            <div class="form-group"><label>Tháng</label><select id="regMonth"></select></div>
-            <div class="form-group"><label>Tuần</label><select id="regWeek"></select></div>
-            <div class="form-group"><label>Ngày triển khai</label><select id="regDay"></select></div>
-          </div>
-          <div class="step-actions"><span></span><button class="btn btn-primary" onclick="goStep(2)">Tiếp theo →</button></div>
+    <!-- REGISTRATION MODAL (popup from Calendar) -->
+    <div class="modal-overlay" id="regModalOverlay">
+      <div class="modal reg-modal">
+        <div class="modal-header">
+          <h3 id="regModalTitle">📝 Đăng ký HĐTM</h3>
+          <button class="modal-close" onclick="closeRegModal()">×</button>
         </div>
-
-        <!-- STEP 2 -->
-        <div class="step-panel" id="step-2">
-          <div class="form-grid">
-            <div class="form-group"><label>Miền</label><select id="regMien"><option value="">— Tất cả —</option></select></div>
-            <div class="form-group"><label>Tỉnh</label><select id="regTinh"><option value="">— Tất cả —</option></select></div>
-            <div class="form-group"><label>Huyện</label><select id="regHuyen"><option value="">— Tất cả —</option></select></div>
-            <div class="form-group"><label>QLKV</label><select id="regQlkv"><option value="">— Tất cả —</option></select></div>
-            <div class="form-group"><label>GĐV</label><select id="regGdv"><option value="">— Tất cả —</option></select></div>
+        <div class="modal-body">
+          <div class="steps-nav">
+            <div class="step-tab active" data-step="1">1. Thời gian</div>
+            <div class="step-tab" data-step="2">2. Phạm vi</div>
+            <div class="step-tab" data-step="3">3. Cửa hàng</div>
+            <div class="step-tab" data-step="4">4. HĐTM</div>
+            <div class="step-tab" data-step="5">5. Xác nhận</div>
           </div>
-          <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(1)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(3)">Tiếp theo →</button></div>
-        </div>
-
-        <!-- STEP 3 -->
-        <div class="step-panel" id="step-3">
-          <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-            <button class="btn btn-secondary btn-sm" onclick="selectAllFiltered()">☑️ Chọn tất cả (lọc hiện tại)</button>
-            <button class="btn btn-secondary btn-sm" onclick="clearSelectedStores()">🗑️ Bỏ chọn hết</button>
-            <span style="margin-left:auto;font-size:.85rem;color:var(--text2);align-self:center" id="selectedCount">Đã chọn: 0</span>
+          <!-- STEP 1 -->
+          <div class="step-panel active" id="step-1">
+            <div class="form-grid">
+              <div class="form-group"><label>Tháng</label><select id="regMonth"></select></div>
+              <div class="form-group"><label>Tuần</label><select id="regWeek"></select></div>
+              <div class="form-group"><label>Ngày triển khai</label><select id="regDay"></select></div>
+            </div>
+            <div class="step-actions"><span></span><button class="btn btn-primary" onclick="goStep(2)">Tiếp theo →</button></div>
           </div>
-          <div class="store-search-box">
-            <input type="text" id="storeSearch" placeholder="🔍 Tìm theo mã SAP hoặc tên cửa hàng..." oninput="renderStoreList()">
+          <!-- STEP 2 -->
+          <div class="step-panel" id="step-2">
+            <div class="form-grid">
+              <div class="form-group"><label>Miền</label><select id="regMien"><option value="">— Tất cả —</option></select></div>
+              <div class="form-group"><label>Tỉnh</label><select id="regTinh"><option value="">— Tất cả —</option></select></div>
+              <div class="form-group"><label>Huyện</label><select id="regHuyen"><option value="">— Tất cả —</option></select></div>
+              <div class="form-group"><label>QLKV</label><select id="regQlkv"><option value="">— Tất cả —</option></select></div>
+              <div class="form-group"><label>GĐV</label><select id="regGdv"><option value="">— Tất cả —</option></select></div>
+            </div>
+            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(1)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(3)">Tiếp theo →</button></div>
           </div>
-          <div class="store-list" id="storeList"></div>
-          <div id="selectedStoresChips" style="margin-top:12px"></div>
-          <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(2)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(4)">Tiếp theo →</button></div>
-        </div>
-
-        <!-- STEP 4 -->
-        <div class="step-panel" id="step-4">
-          <div class="type-card-grid" id="typeCardGrid"></div>
-          <div id="typeDetailBox" style="margin-top:16px"></div>
-          <div class="form-grid" style="margin-top:16px">
-            <div class="form-group" style="grid-column:span 2"><label>Ghi chú</label><input type="text" id="regNote" placeholder="Ghi chú thêm (không bắt buộc)"></div>
+          <!-- STEP 3 -->
+          <div class="step-panel" id="step-3">
+            <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="selectAllFiltered()">☑️ Chọn tất cả (lọc hiện tại)</button>
+              <button class="btn btn-secondary btn-sm" onclick="clearSelectedStores()">🗑️ Bỏ chọn hết</button>
+              <span style="margin-left:auto;font-size:.85rem;color:var(--text2);align-self:center" id="selectedCount">Đã chọn: 0</span>
+            </div>
+            <div class="store-search-box">
+              <input type="text" id="storeSearch" placeholder="🔍 Tìm theo mã SAP hoặc tên cửa hàng..." oninput="renderStoreList()">
+            </div>
+            <div class="store-list" id="storeList"></div>
+            <div id="selectedStoresChips" style="margin-top:12px"></div>
+            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(2)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(4)">Tiếp theo →</button></div>
           </div>
-          <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(3)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(5)">Tiếp theo →</button></div>
-        </div>
-
-        <!-- STEP 5 -->
-        <div class="step-panel" id="step-5">
-          <div id="validationWarnings"></div>
-          <div class="summary-box" id="regSummary"></div>
-          <div class="step-actions">
-            <button class="btn btn-secondary" onclick="goStep(4)">← Quay lại</button>
-            <button class="btn btn-primary" id="btnSubmitReg" onclick="submitRegistration()">✅ ĐĂNG KÝ HOẠT ĐỘNG</button>
+          <!-- STEP 4 -->
+          <div class="step-panel" id="step-4">
+            <div class="type-card-grid" id="typeCardGrid"></div>
+            <div id="typeDetailBox" style="margin-top:16px"></div>
+            <div class="form-grid" style="margin-top:16px">
+              <div class="form-group" style="grid-column:span 2"><label>Ghi chú</label><input type="text" id="regNote" placeholder="Ghi chú thêm (không bắt buộc)"></div>
+            </div>
+            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(3)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(5)">Tiếp theo →</button></div>
+          </div>
+          <!-- STEP 5 -->
+          <div class="step-panel" id="step-5">
+            <div id="validationWarnings"></div>
+            <div class="summary-box" id="regSummary"></div>
+            <div class="step-actions">
+              <button class="btn btn-secondary" onclick="goStep(4)">← Quay lại</button>
+              <button class="btn btn-primary" id="btnSubmitReg" onclick="submitRegistration()">✅ ĐĂNG KÝ HOẠT ĐỘNG</button>
+            </div>
           </div>
         </div>
       </div>
