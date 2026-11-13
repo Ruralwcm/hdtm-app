@@ -341,23 +341,12 @@ tbody tr:hover{background:#f8f9fc}
         </div>
         <div class="modal-body">
           <div class="steps-nav">
-            <div class="step-tab active" data-step="1">1. Thời gian</div>
-            <div class="step-tab" data-step="2">2. Phạm vi</div>
-            <div class="step-tab" data-step="3">3. Cửa hàng</div>
-            <div class="step-tab" data-step="4">4. HĐTM</div>
-            <div class="step-tab" data-step="5">5. Xác nhận</div>
+            <div class="step-tab active" data-step="1">1. Phạm vi & CH</div>
+            <div class="step-tab" data-step="2">2. Chọn HĐTM</div>
+            <div class="step-tab" data-step="3">3. Xác nhận</div>
           </div>
-          <!-- STEP 1 -->
+          <!-- STEP 1: Phạm vi + Cửa hàng (merged) -->
           <div class="step-panel active" id="step-1">
-            <div class="form-grid">
-              <div class="form-group"><label>Tháng</label><select id="regMonth"></select></div>
-              <div class="form-group"><label>Tuần</label><select id="regWeek"></select></div>
-              <div class="form-group"><label>Ngày triển khai</label><select id="regDay"></select></div>
-            </div>
-            <div class="step-actions"><span></span><button class="btn btn-primary" onclick="goStep(2)">Tiếp theo →</button></div>
-          </div>
-          <!-- STEP 2 -->
-          <div class="step-panel" id="step-2">
             <div class="form-grid">
               <div class="form-group"><label>Miền</label><select id="regMien"><option value="">— Tất cả —</option></select></div>
               <div class="form-group"><label>Tỉnh</label><select id="regTinh"><option value="">— Tất cả —</option></select></div>
@@ -365,11 +354,7 @@ tbody tr:hover{background:#f8f9fc}
               <div class="form-group"><label>QLKV</label><select id="regQlkv"><option value="">— Tất cả —</option></select></div>
               <div class="form-group"><label>GĐV</label><select id="regGdv"><option value="">— Tất cả —</option></select></div>
             </div>
-            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(1)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(3)">Tiếp theo →</button></div>
-          </div>
-          <!-- STEP 3 -->
-          <div class="step-panel" id="step-3">
-            <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:10px;margin:12px 0;flex-wrap:wrap">
               <button class="btn btn-secondary btn-sm" onclick="selectAllFiltered()">☑️ Chọn tất cả (lọc hiện tại)</button>
               <button class="btn btn-secondary btn-sm" onclick="clearSelectedStores()">🗑️ Bỏ chọn hết</button>
               <span style="margin-left:auto;font-size:.85rem;color:var(--text2);align-self:center" id="selectedCount">Đã chọn: 0</span>
@@ -379,23 +364,29 @@ tbody tr:hover{background:#f8f9fc}
             </div>
             <div class="store-list" id="storeList"></div>
             <div id="selectedStoresChips" style="margin-top:12px"></div>
-            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(2)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(4)">Tiếp theo →</button></div>
+            <div class="step-actions"><span></span><button class="btn btn-primary" onclick="goStep(2)">Tiếp theo →</button></div>
           </div>
-          <!-- STEP 4 -->
-          <div class="step-panel" id="step-4">
+          <!-- STEP 2: Chọn HĐTM + số ngày triển khai -->
+          <div class="step-panel" id="step-2">
             <div class="type-card-grid" id="typeCardGrid"></div>
             <div id="typeDetailBox" style="margin-top:16px"></div>
             <div class="form-grid" style="margin-top:16px">
+              <div class="form-group"><label>Số ngày triển khai</label><input type="number" id="regNumDays" value="1" min="1" max="30" onchange="updateDatePreview()"></div>
+              <div class="form-group"><label>Ngày bắt đầu</label><input type="text" id="regStartDate" readonly style="background:var(--bg)"></div>
+            </div>
+            <div id="datePreviewList" style="margin-top:8px;font-size:.82rem;color:var(--text2)"></div>
+            <div id="targetPreviewBox" style="margin-top:12px"></div>
+            <div class="form-grid" style="margin-top:12px">
               <div class="form-group" style="grid-column:span 2"><label>Ghi chú</label><input type="text" id="regNote" placeholder="Ghi chú thêm (không bắt buộc)"></div>
             </div>
-            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(3)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(5)">Tiếp theo →</button></div>
+            <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(1)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(3)">Tiếp theo →</button></div>
           </div>
-          <!-- STEP 5 -->
-          <div class="step-panel" id="step-5">
+          <!-- STEP 3: Xác nhận & Đăng ký -->
+          <div class="step-panel" id="step-3">
             <div id="validationWarnings"></div>
             <div class="summary-box" id="regSummary"></div>
             <div class="step-actions">
-              <button class="btn btn-secondary" onclick="goStep(4)">← Quay lại</button>
+              <button class="btn btn-secondary" onclick="goStep(2)">← Quay lại</button>
               <button class="btn btn-primary" id="btnSubmitReg" onclick="submitRegistration()">✅ ĐĂNG KÝ HOẠT ĐỘNG</button>
             </div>
           </div>
