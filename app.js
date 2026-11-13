@@ -253,26 +253,24 @@ async function loadPSD() {
   } catch(e) { console.warn('PSD load fallback, using storelist'); }
 }
 
-// ===== COMPUTE TARGET (TBN × formula) =====
+// ===== COMPUTE TARGET (TBN + phần tăng trưởng × số ngày) =====
 function computeTarget(sap, type_code, numDays) {
   const tbn = PSD_MAP[sap] || 0; // triệu đồng/ngày
-  if (!tbn || tbn <= 0) return { tbn: 0, target: 0, uplift_pct: 0, note: 'Chưa có PSD' };
+  if (!tbn || tbn <= 0) return { tbn: 0, target: 0, uplift_pct: 0, note: 'Chưa có PSD', minVal: 0, maxVal: 0 };
   const tp = type_code;
-  let target = 0, uplift_pct = 0, minVal = 0, maxVal = Infinity, note = '';
+  let target = 0, uplift_pct = 0, note = '';
 
-  // TBN × rate × days → convert to VND (×1e6 since TBN is in millions)
+  // TBN (triệu) × (1 + uplift% × số ngày) → ×1e6 ra VND
   if (tp === 'HN_CD') {
-    uplift_pct = 20; target = tbn * 0.20 * numDays * 1e6; minVal = 5000000; maxVal = 20000000; note = 'TBN × 20% × số ngày';
+    uplift_pct = 20; target = tbn * (1 + 0.20 * numDays) * 1e6; note = 'TBN + TBN×20%×số ngày';
   } else if (tp === 'HC_NCC' || tp === 'HC_CD') {
-    uplift_pct = 30; target = tbn * 0.30 * numDays * 1e6; note = 'TBN × 30% × số ngày (HC kết nối)';
+    uplift_pct = 30; target = tbn * (1 + 0.30 * numDays) * 1e6; note = 'TBN + TBN×30%×số ngày';
   } else if (tp === 'GHHC_SN') {
-    uplift_pct = 100; target = tbn * 2 * numDays * 1e6; minVal = 20000000; maxVal = 50000000; note = 'TBN × 2 × số ngày';
+    uplift_pct = 100; target = tbn * 2 * numDays * 1e6; note = 'TBN × 2 × số ngày';
   } else {
-    uplift_pct = 10; target = tbn * 0.10 * numDays * 1e6; note = 'TBN × 10% × số ngày';
+    uplift_pct = 10; target = tbn * (1 + 0.10 * numDays) * 1e6; note = 'TBN + TBN×10%×số ngày';
   }
-  if (target < minVal) target = minVal;
-  if (maxVal && target > maxVal) target = maxVal;
-  return { tbn: Math.round(tbn * 1e6), target: Math.round(target), uplift_pct, note, minVal, maxVal };
+  return { tbn: Math.round(tbn * 1e6), target: Math.round(target), uplift_pct, note, minVal: 0, maxVal: 0 };
 }
 
 // Get list of deployment dates from start date + n days
