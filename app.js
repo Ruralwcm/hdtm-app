@@ -295,19 +295,19 @@ function updateDaysForWeek() {
 
 // ===== MASTER DATA (types + rules) =====
 const DEFAULT_TYPES = [
-  {code:'HN_T',name:'Hoạt náo_Thường',target_type:'weekly',days_per:1,uplift_benchmark:15,color:'#2196F3',active:'TRUE'},
-  {code:'HN_DN',name:'Hoạt náo điểm nhấn_FF',target_type:'weekly',days_per:2,uplift_benchmark:30,color:'#FF9800',active:'TRUE'},
-  {code:'HC',name:'Hội chợ',target_type:'monthly',days_per:1,uplift_benchmark:50,color:'#4CAF50',active:'TRUE'},
-  {code:'HC_LON',name:'Hội chợ lớn',target_type:'monthly',days_per:1,uplift_benchmark:100,color:'#E91E63',active:'TRUE'},
-  {code:'DDT',name:'Đánh đối thủ',target_type:'weekly',days_per:1,uplift_benchmark:40,color:'#9C27B0',active:'TRUE'},
-  {code:'KT',name:'Khai trương',target_type:'monthly',days_per:1,uplift_benchmark:150,color:'#F44336',active:'TRUE'},
-  {code:'KHAC',name:'Các hoạt động khác',target_type:'monthly',days_per:1,uplift_benchmark:10,color:'#607D8B',active:'TRUE'}
+  {code:'HN_CD',name:'Hoạt náo theo chủ đề',target_type:'weekly',days_per:1,uplift_benchmark:20,color:'#FF9800',active:'TRUE'},
+  {code:'HC_NCC',name:'HC kết nối NCC',target_type:'monthly',days_per:1,uplift_benchmark:30,color:'#4CAF50',active:'TRUE'},
+  {code:'HC_CD',name:'HC kết nối cộng đồng',target_type:'monthly',days_per:1,uplift_benchmark:30,color:'#2196F3',active:'TRUE'},
+  {code:'GHHC_SN',name:'GHHC Sinh nhật',target_type:'monthly',days_per:1,uplift_benchmark:100,color:'#E91E63',active:'TRUE'},
+  {code:'HDTM_KHAC',name:'HĐTM khác',target_type:'monthly',days_per:1,uplift_benchmark:10,color:'#607D8B',active:'TRUE'}
 ];
 const DEFAULT_RULES = [
-  {type_code:'HN_T',rule_name:'Số ngày/lượt',rule_value:'1',description:'Hoạt náo thường: 1 ngày/lượt'},
-  {type_code:'HN_DN',rule_name:'Số ngày/lượt',rule_value:'2',description:'Hoạt náo điểm nhấn: 2 ngày/lượt'},
-  {type_code:'HC',rule_name:'Target tháng',rule_value:'Theo Target',description:'Hội chợ: số lượng theo Target tháng được phân bổ'},
-  {type_code:'KT',rule_name:'Quy đổi',rule_value:'Khai trương = Hội chợ lớn',description:'Khai trương tính như Hội chợ lớn'}
+  {type_code:'HN_CD',rule_name:'Công thức tính target',rule_value:'TBN × TT 20% × số ngày triển khai',description:'Uplift min 5 triệu, max 20 triệu'},
+  {type_code:'HN_CD',rule_name:'Số ngày/lượt',rule_value:'1',description:'1 ngày/lượt'},
+  {type_code:'HC_NCC',rule_name:'Công thức tính target',rule_value:'TBN × tỉ lệ × số ngày',description:'Hội chợ kết nối nhà cung cấp'},
+  {type_code:'HC_CD',rule_name:'Công thức tính target',rule_value:'TBN × tỉ lệ × số ngày',description:'Hội chợ kết nối cộng đồng'},
+  {type_code:'GHHC_SN',rule_name:'Công thức tính target',rule_value:'TBN × 2 × số ngày triển khai',description:'Uplift min 20 triệu, max 50 triệu'},
+  {type_code:'HDTM_KHAC',rule_name:'Công thức tính target',rule_value:'Uplift 10%',description:'Các hoạt động khác'}
 ];
 
 async function loadMasterData() {
