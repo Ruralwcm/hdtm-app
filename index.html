@@ -368,19 +368,19 @@ tbody tr:hover{background:#f8f9fc}
           <!-- STEP 2: Chọn HĐTM + số ngày triển khai -->
           <div class="step-panel" id="step-2">
             <div class="type-card-grid" id="typeCardGrid"></div>
-            <div id="typeDetailBox" style="margin:8px 0;font-size:.8rem"></div>
-            <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <div style="flex:1;min-width:200px">
+            <div id="typeDetailBox" style="margin:6px 0"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+              <!-- Cột trái: ngày -->
+              <div>
                 <div class="form-grid">
                   <div class="form-group"><label>Số ngày</label><input type="number" id="regNumDays" value="1" min="1" max="30" onchange="updateDatePreview()"></div>
                   <div class="form-group"><label>Bắt đầu</label><input type="text" id="regStartDate" readonly style="background:var(--bg);font-size:.82rem"></div>
                 </div>
                 <div id="datePreviewList" style="margin-top:6px;font-size:.78rem;color:var(--text2)"></div>
+                <div class="form-group" style="margin-top:10px"><label>Ghi chú</label><input type="text" id="regNote" placeholder="Ghi chú (không bắt buộc)"></div>
               </div>
-              <div style="flex:2;min-width:280px" id="targetPreviewBox"></div>
-            </div>
-            <div class="form-grid" style="margin-top:10px">
-              <div class="form-group" style="grid-column:span 2"><label>Ghi chú</label><input type="text" id="regNote" placeholder="Ghi chú thêm (không bắt buộc)"></div>
+              <!-- Cột phải: doanh thu dự kiến -->
+              <div id="targetPreviewBox" style="align-self:start"></div>
             </div>
             <div class="step-actions"><button class="btn btn-secondary" onclick="goStep(1)">← Quay lại</button><button class="btn btn-primary" onclick="goStep(3)">Tiếp theo →</button></div>
           </div>
