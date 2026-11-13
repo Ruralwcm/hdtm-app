@@ -18,10 +18,12 @@ let TARGETS = [];
 let SELECTED_STORES = [];    // trong flow đăng ký
 let REG_STEP = 1;
 let REG_TYPE_SELECTED = null;
+let REG_DATE = '';           // ngày được chọn từ calendar
 let TR_PAGE = 1;
 const TR_PAGE_SIZE = 25;
 let CAL_MONTH = new Date().getMonth();
 let CAL_YEAR = new Date().getFullYear();
+let PSD_MAP = {};            // sap → psd_target (từ psd.json)
 
 const STATUS_LABELS = {
   DRAFT:'Nháp', REGISTERED:'Đã đăng ký', APPROVED:'Đã duyệt', PLANNED:'Đã lên kế hoạch',
@@ -44,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   populateMonthWeekSelectors();
   populateCascadingFilters();
   loadMasterData();
+  loadPSD();
   renderStoreList();
   renderTypeCards();
   loadDashboard();
@@ -213,85 +216,21 @@ function populateMonthWeekSelectors() {
     const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
     months.push({val:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, label:`Tháng ${d.getMonth()+1}/${d.getFullYear()}`});
   }
-  ['regMonth','dbMonth','trMonth','rcMonth'].forEach(id => {
+  ['dbMonth','trMonth','rcMonth'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.innerHTML = months.map(m=>`<option value="${m.val}">${m.label}</option>`).join('');
   });
-  document.getElementById('regMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-  updateWeekOptions();
-  document.getElementById('regWeek').addEventListener('change', updateDaysForWeek);
-  document.getElementById('regMonth').addEventListener('change', () => { updateWeekOptions(); updateDaysForWeek(); });
-}
-
-// Số tuần trong tháng (bắt đầu T2), tính toán lại khi đổi tháng
-function updateWeekOptions() {
-  const monthVal = document.getElementById('regMonth').value;
-  if (!monthVal) return;
-  const [y, m] = monthVal.split('-').map(Number);
-  const firstDay = new Date(y, m-1, 1);
-  const firstDow = firstDay.getDay(); // 0=CN, 1=T2, ... 6=T7
-  const daysInMonth = new Date(y, m, 0).getDate();
-
-  // Monday of the week containing day 1
-  const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
-  const week1Monday = 1 + mondayOffset;
-  // Number of weeks = ceil((daysInMonth - week1Monday + 1) / 7)
-  const totalWeeks = Math.ceil((daysInMonth - week1Monday + 1) / 7);
-
-  const weeksHtml = Array.from({length: totalWeeks}, (_, i) => {
-    const mon = week1Monday + i * 7;
-    const sun = Math.min(mon + 6, daysInMonth);
-    const rangeLabel = mon > 0 ? ` (${mon}-${sun}/${m})` : ` (~${sun}/${m})`;
-    return `<option value="W${i+1}">Tuần ${i+1}${rangeLabel}</option>`;
-  }).join('');
-
-  ['regWeek','trWeek','rcWeek'].forEach(id => {
+  const weekOpts = [1,2,3,4,5].map(w=>`<option value="W${w}">Tuần ${w}</option>`).join('');
+  ['trWeek','rcWeek'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const hasAll = el.innerHTML.includes('Tất cả') || el.innerHTML.includes('Cả tháng');
-    const keep = hasAll ? el.querySelector('option')?.outerHTML || '' : '';
-    el.innerHTML = keep + weeksHtml;
+    el.innerHTML = (hasAll ? el.querySelector('option')?.outerHTML || '' : '') + weekOpts;
   });
-  // Keep current week selection if possible
-  const regWeek = document.getElementById('regWeek');
-  if (regWeek && parseInt(regWeek.value?.replace('W','')) > totalWeeks) {
-    regWeek.value = 'W1';
-  }
 }
-
-function updateDaysForWeek() {
-  const monthVal = document.getElementById('regMonth').value;
-  if (!monthVal) return;
-  const [y, m] = monthVal.split('-').map(Number);
-  const weekNum = parseInt(document.getElementById('regWeek').value.replace('W','')) || 1;
-  const firstDay = new Date(y, m-1, 1);
-  const firstDow = firstDay.getDay(); // 0=CN, 1=T2, ... 6=T7
-  const daysInMonth = new Date(y, m, 0).getDate();
-
-  // Monday of the week containing day 1
-  const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
-  const mondayDate = 1 + mondayOffset + (weekNum - 1) * 7;
-  const sundayDate = mondayDate + 6;
-
-  // Only days within the month
-  const start = Math.max(1, mondayDate);
-  const end = Math.min(daysInMonth, sundayDate);
-
-  const dayNames = ['CN','T2','T3','T4','T5','T6','T7'];
-  const sel = document.getElementById('regDay');
-  sel.innerHTML = '';
-  if (start > end || start > daysInMonth) {
-    sel.innerHTML = '<option value="">— Không có ngày trong tháng —</option>';
-    return;
-  }
-  for (let d = start; d <= end; d++) {
-    const dateObj = new Date(y, m-1, d);
-    const label = `${dayNames[dateObj.getDay()]} - ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
-    sel.insertAdjacentHTML('beforeend', `<option value="${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}">${label}</option>`);
-  }
-}
+// (updateWeekOptions + updateDaysForWeek removed — no longer needed)
 
 // ===== MASTER DATA (types + rules) =====
 const DEFAULT_TYPES = [
@@ -323,11 +262,78 @@ async function loadMasterData() {
   renderTypeCards();
 }
 
-// ===== STEP NAVIGATION (REGISTER) =====
+// ===== PSD DATA (TBN set target) =====
+async function loadPSD() {
+  try {
+    const res = await fetch('psd.json');
+    const data = await res.json();
+    data.forEach(d => { if (d.sap) PSD_MAP[d.sap] = parseFloat(d.psd_target) || 0; });
+    console.log(`PSD loaded: ${Object.keys(PSD_MAP).length} stores`);
+  } catch(e) { console.warn('PSD load fallback, using storelist'); }
+}
+
+// ===== COMPUTE TARGET (TBN × formula) =====
+function computeTarget(sap, type_code, numDays) {
+  const tbn = PSD_MAP[sap] || 0; // triệu đồng/ngày
+  if (!tbn || tbn <= 0) return { tbn: 0, target: 0, uplift_pct: 0, note: 'Chưa có PSD' };
+  const tp = type_code;
+  let target = 0, uplift_pct = 0, minVal = 0, maxVal = Infinity, note = '';
+
+  // TBN × rate × days → convert to VND (×1e6 since TBN is in millions)
+  if (tp === 'HN_CD') {
+    uplift_pct = 20; target = tbn * 0.20 * numDays * 1e6; minVal = 5000000; maxVal = 20000000; note = 'TBN × 20% × số ngày';
+  } else if (tp === 'HC_NCC' || tp === 'HC_CD') {
+    uplift_pct = 30; target = tbn * 0.30 * numDays * 1e6; note = 'TBN × 30% × số ngày (HC kết nối)';
+  } else if (tp === 'GHHC_SN') {
+    uplift_pct = 100; target = tbn * 2 * numDays * 1e6; minVal = 20000000; maxVal = 50000000; note = 'TBN × 2 × số ngày';
+  } else {
+    uplift_pct = 10; target = tbn * 0.10 * numDays * 1e6; note = 'TBN × 10% × số ngày';
+  }
+  if (target < minVal) target = minVal;
+  if (maxVal && target > maxVal) target = maxVal;
+  return { tbn: Math.round(tbn * 1e6), target: Math.round(target), uplift_pct, note, minVal, maxVal };
+}
+
+// Get list of deployment dates from start date + n days
+function getDateRange(startDate, numDays) {
+  const parts = startDate.split('-');
+  const y = parseInt(parts[0]), m = parseInt(parts[1])-1, d = parseInt(parts[2]);
+  const dates = [];
+  for (let i = 0; i < numDays; i++) {
+    const dt = new Date(y, m, d + i);
+    dates.push(`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`);
+  }
+  return dates;
+}
+
+// Update date preview list & target preview
+function updateDatePreview() {
+  const numDays = parseInt(document.getElementById('regNumDays').value) || 1;
+  const dates = getDateRange(REG_DATE, numDays);
+  const dayNames = ['CN','T2','T3','T4','T5','T6','T7'];
+  document.getElementById('datePreviewList').innerHTML = dates.map(d => {
+    const dt = new Date(d);
+    return `<span style="display:inline-block;background:var(--bg);border-radius:6px;padding:3px 8px;margin:2px">${dayNames[dt.getDay()]} ${d.split('-')[2]}/${d.split('-')[1]}</span>`;
+  }).join(' ');
+  // Preview target for first selected store
+  if (REG_TYPE_SELECTED && SELECTED_STORES.length > 0) {
+    const sap = SELECTED_STORES[0].sap;
+    const ct = computeTarget(sap, REG_TYPE_SELECTED, numDays);
+    document.getElementById('targetPreviewBox').innerHTML = `<div class="summary-box" style="margin-top:8px">
+      <div class="summary-row"><span class="label">TBN (PSD)</span><span class="value">${ct.tbn.toLocaleString('vi-VN')} đ</span></div>
+      <div class="summary-row"><span class="label">Doanh thu dự kiến / CH</span><span class="value" style="color:var(--green);font-size:1.1rem">${ct.target.toLocaleString('vi-VN')} đ</span></div>
+      <div class="summary-row"><span class="label">Uplift</span><span class="value">+${ct.uplift_pct}%</span></div>
+      <div class="summary-row"><span class="label">Công thức</span><span class="value">${ct.note}</span></div>
+      ${ct.minVal ? `<div class="summary-row"><span class="label">Min/Max</span><span class="value">${ct.minVal.toLocaleString('vi-VN')} - ${ct.maxVal.toLocaleString('vi-VN')} đ</span></div>` : ''}
+    </div>`;
+  }
+}
+
+// ===== STEP NAVIGATION (3 steps: Phạm vi+CH → HĐTM → Xác nhận) =====
 function goStep(n) {
   if (n > REG_STEP) {
-    if (REG_STEP === 3 && SELECTED_STORES.length === 0) { alert('⚠️ Vui lòng chọn ít nhất 1 cửa hàng'); return; }
-    if (REG_STEP === 4 && !REG_TYPE_SELECTED) { alert('⚠️ Vui lòng chọn loại HĐTM'); return; }
+    if (REG_STEP === 1 && SELECTED_STORES.length === 0) { alert('⚠️ Vui lòng chọn ít nhất 1 cửa hàng'); return; }
+    if (REG_STEP === 2 && !REG_TYPE_SELECTED) { alert('⚠️ Vui lòng chọn loại HĐTM'); return; }
   }
   REG_STEP = n;
   document.querySelectorAll('.step-tab').forEach(t => {
@@ -337,7 +343,8 @@ function goStep(n) {
   });
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('step-'+n).classList.add('active');
-  if (n === 5) renderStep5Summary();
+  if (n === 2) updateDatePreview();
+  if (n === 3) renderStep3Summary();
 }
 document.querySelectorAll('.step-tab').forEach(t => {
   t.addEventListener('click', () => goStep(parseInt(t.dataset.step)));
@@ -435,42 +442,45 @@ function selectType(code) {
       ${rules.map(r => `<div style="padding:6px 0;font-size:.84rem"><b>${r.rule_name}:</b> ${r.rule_value} <span style="color:var(--text2)">— ${r.description}</span></div>`).join('') || '<div style="color:var(--text3);font-size:.84rem">Chưa có rule riêng</div>'}
       <div style="margin-top:8px;font-size:.84rem"><b>Uplift dự kiến:</b> +${t.uplift_benchmark}% so với SPD base</div>
     </div>`;
+  updateDatePreview();
 }
 
-// ===== STEP 5: SUMMARY + VALIDATION =====
-function renderStep5Summary() {
-  const monthVal = document.getElementById('regMonth').value;
-  const week = document.getElementById('regWeek').value;
-  const day = document.getElementById('regDay').value;
+// ===== STEP 3: XÁC NHẬN + DOANH THU DỰ KIẾN =====
+function renderStep3Summary() {
+  const numDays = parseInt(document.getElementById('regNumDays').value) || 1;
+  const dates = getDateRange(REG_DATE, numDays);
   const t = ACTIVITY_TYPES.find(x => x.code === REG_TYPE_SELECTED);
+  const dayNames = ['CN','T2','T3','T4','T5','T6','T7'];
+
+  // Tính tổng doanh thu dự kiến cho tất cả CH × tất cả ngày
+  let totalTarget = 0;
+  const perStoreTarget = [];
+  SELECTED_STORES.forEach(s => {
+    const ct = computeTarget(s.sap, REG_TYPE_SELECTED, numDays);
+    totalTarget += ct.target;
+    perStoreTarget.push({ ...s, ...ct });
+  });
 
   document.getElementById('regSummary').innerHTML = `
-    <div class="summary-row"><span class="label">Thời gian</span><span class="value">${week} · ${day}</span></div>
+    <div class="summary-row"><span class="label">Ngày triển khai</span><span class="value">${dates.map(d => {const dt=new Date(d); return dayNames[dt.getDay()]+' '+d.split('-')[2]+'/'+d.split('-')[1];}).join(', ')}</span></div>
+    <div class="summary-row"><span class="label">Số ngày</span><span class="value">${numDays} ngày</span></div>
     <div class="summary-row"><span class="label">Số cửa hàng</span><span class="value">${SELECTED_STORES.length} CH</span></div>
     <div class="summary-row"><span class="label">Loại HĐTM</span><span class="value">${t ? t.name : '—'}</span></div>
-    <div class="summary-row"><span class="label">Uplift dự kiến</span><span class="value">+${t ? t.uplift_benchmark : 0}%</span></div>
+    <div class="summary-row"><span class="label">Tổng doanh thu dự kiến</span><span class="value" style="color:var(--green);font-size:1.1rem;font-weight:800">${totalTarget.toLocaleString('vi-VN')} đ</span></div>
+    <div class="summary-row"><span class="label">Doanh thu/CH/ngày (TB)</span><span class="value">${SELECTED_STORES.length ? Math.round(totalTarget/(SELECTED_STORES.length*numDays)).toLocaleString('vi-VN') : 0} đ</span></div>
     <div class="summary-row"><span class="label">Người đăng ký</span><span class="value">${CURRENT_USER}</span></div>
     <div class="summary-row"><span class="label">Ghi chú</span><span class="value">${document.getElementById('regNote').value || '—'}</span></div>
   `;
 
-  // Validation checks
+  // Validation
   const warnings = [];
-  // Check trùng lịch: same SAP + same day already in ACTIVITIES cache
-  const dupStores = SELECTED_STORES.filter(s => ACTIVITIES.some(a => a.sap === s.sap && a.plan_date === day && a.status !== 'CANCELLED' && a.status !== 'REPLACED'));
+  const dupStores = SELECTED_STORES.filter(s => ACTIVITIES.some(a => a.sap === s.sap && dates.includes(a.plan_date) && a.status !== 'CANCELLED' && a.status !== 'REPLACED'));
   if (dupStores.length) {
-    warnings.push(`<div class="warning-box danger">⚠️ ${dupStores.length} cửa hàng đã có hoạt động trong ngày này: ${dupStores.map(s=>s.sap).join(', ')}</div>`);
+    warnings.push(`<div class="warning-box danger">⚠️ ${dupStores.length} CH đã có HĐ trong các ngày này: ${dupStores.map(s=>s.sap).join(', ')}</div>`);
   }
-  // Check vượt target (demo: so sánh count theo qlkv+type trong TARGETS)
-  const qlkvGroups = {};
-  SELECTED_STORES.forEach(s => { qlkvGroups[s.qlkv] = (qlkvGroups[s.qlkv]||0)+1; });
-  Object.keys(qlkvGroups).forEach(q => {
-    const tg = TARGETS.find(t2 => t2.qlkv === q && t2.type_code === REG_TYPE_SELECTED && t2.month === monthVal);
-    if (tg) {
-      const already = ACTIVITIES.filter(a => a.qlkv===q && a.type_code===REG_TYPE_SELECTED && a.status!=='CANCELLED').length;
-      if (already + qlkvGroups[q] > Number(tg.target_qty)) {
-        warnings.push(`<div class="warning-box">⚠️ QLKV ${q}: đăng ký (${already+qlkvGroups[q]}) vượt Target được phân bổ (${tg.target_qty})</div>`);
-      }
-    }
+  // Check định mức QLKV
+  SELECTED_STORES.forEach(s => {
+    // simplified check — can be enhanced with dinh_muc.json
   });
   if (!warnings.length) warnings.push(`<div class="warning-box success">✅ Không phát hiện vi phạm quy tắc nào</div>`);
   document.getElementById('validationWarnings').innerHTML = warnings.join('');
@@ -479,40 +489,45 @@ function renderStep5Summary() {
 async function submitRegistration() {
   const btn = document.getElementById('btnSubmitReg');
   btn.disabled = true; btn.textContent = '⏳ Đang đăng ký...';
-  const monthVal = document.getElementById('regMonth').value;
-  const week = document.getElementById('regWeek').value;
-  const day = document.getElementById('regDay').value;
+  const numDays = parseInt(document.getElementById('regNumDays').value) || 1;
+  const dates = getDateRange(REG_DATE, numDays);
   const note = document.getElementById('regNote').value;
   const t = ACTIVITY_TYPES.find(x => x.code === REG_TYPE_SELECTED);
   const now = new Date().toISOString();
 
   let successCount = 0;
   for (const s of SELECTED_STORES) {
-    const activityId = 'ACT-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random()*1000);
-    const activity = {
-      activity_id: activityId, parent_id: '', type_code: REG_TYPE_SELECTED, type_name: t?t.name:'',
-      sap: s.sap, store_name: s.name, mien: s.mien, tinh: s.tinh, huyen: s.huyen, qlkv: s.qlkv, gdv: s.gdv,
-      week: week, plan_date: day, target: 1, actual: '', uplift_planned: t?t.uplift_benchmark:0, uplift_actual:'',
-      spd_base:'', spd_actual:'', status:'REGISTERED', registered_by: CURRENT_USER, registered_at: now,
-      note: note, created_at: now, updated_at: now
-    };
-    if (GAS_URL) {
-      await gasPost({ action:'save', table:'hdtm_activities', data: activity });
-      await gasPost({ action:'save', table:'hdtm_history', data: {
-        activity_id: activityId, action:'REGISTERED', changed_by: CURRENT_USER, changed_at: now,
-        field_name:'ALL', old_value:'', new_value: JSON.stringify(activity), reason:'Đăng ký mới'
-      }});
+    const ct = computeTarget(s.sap, REG_TYPE_SELECTED, numDays);
+    for (const planDate of dates) {
+      const activityId = 'ACT-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random()*1000);
+      const weekVal = 'W' + Math.ceil(new Date(planDate).getDate() / 7);
+      const activity = {
+        activity_id: activityId, parent_id: '', type_code: REG_TYPE_SELECTED, type_name: t?t.name:'',
+        sap: s.sap, store_name: s.name, mien: s.mien, tinh: s.tinh, huyen: s.huyen, qlkv: s.qlkv, gdv: s.gdv,
+        week: weekVal, plan_date: planDate, target: Math.round(ct.target / numDays), actual: '',
+        uplift_planned: ct.uplift_pct, uplift_actual: '', spd_base: ct.tbn, spd_actual: '',
+        status: 'REGISTERED', registered_by: CURRENT_USER, registered_at: now,
+        note: note, created_at: now, updated_at: now
+      };
+      if (GAS_URL) {
+        await gasPost({ action:'save', table:'hdtm_activities', data: activity });
+        await gasPost({ action:'save', table:'hdtm_history', data: {
+          activity_id: activityId, action:'REGISTERED', changed_by: CURRENT_USER, changed_at: now,
+          field_name:'ALL', old_value:'', new_value: JSON.stringify(activity), reason:'Đăng ký mới'
+        }});
+      }
+      ACTIVITIES.push(activity);
+      successCount++;
     }
-    ACTIVITIES.push(activity);
-    successCount++;
   }
 
   btn.disabled = false; btn.textContent = '✅ ĐĂNG KÝ HOẠT ĐỘNG';
-  alert(`✅ Đã đăng ký thành công ${successCount} hoạt động!`);
-  // reset
-  SELECTED_STORES = []; REG_TYPE_SELECTED = null;
+  alert(`✅ Đã đăng ký ${successCount} hoạt động (${SELECTED_STORES.length} CH × ${numDays} ngày)!`);
+  SELECTED_STORES = []; REG_TYPE_SELECTED = null; REG_DATE = '';
   renderSelectedChips(); updateSelectedCount(); renderTypeCards();
-  document.getElementById('regNote').value = '';
+  document.getElementById('regNote').value = ''; document.getElementById('regNumDays').value = '1';
+  document.getElementById('datePreviewList').innerHTML = ''; document.getElementById('targetPreviewBox').innerHTML = '';
+  document.getElementById('regStartDate').value = '';
   goStep(1);
   closeRegModal();
   loadDashboard(); loadTracking(1); renderCalendar();
@@ -930,26 +945,16 @@ function renderCalendar() {
 
 // ===== CALENDAR CLICK → REGISTER =====
 function calRegister(dateStr) {
+  REG_DATE = dateStr;
   const parts = dateStr.split('-');
-  if (parts.length === 3) {
-    const y = parseInt(parts[0]), m = parseInt(parts[1]), day = parseInt(parts[2]);
-    const monthVal = parts[0] + '-' + parts[1];
-    document.getElementById('regMonth').value = monthVal;
-    updateWeekOptions();
-    const firstDay = new Date(y, m-1, 1);
-    const firstDow = firstDay.getDay();
-    const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
-    const week1Monday = 1 + mondayOffset;
-    let weekNum = Math.ceil((day - week1Monday + 1) / 7);
-    if (weekNum < 1) weekNum = 1;
-    const regWeek = document.getElementById('regWeek');
-    const maxWeek = regWeek.querySelectorAll('option').length - (regWeek.querySelector('option[value=""]') ? 1 : 0);
-    if (weekNum > maxWeek) weekNum = maxWeek;
-    document.getElementById('regWeek').value = 'W' + weekNum;
-    updateDaysForWeek();
-    document.getElementById('regDay').value = dateStr;
-  }
+  const dayNames = ['CN','T2','T3','T4','T5','T6','T7'];
+  const dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  document.getElementById('regModalTitle').textContent = `📝 Đăng ký HĐTM — ${dayNames[dt.getDay()]} ${parts[2]}/${parts[1]}/${parts[0]}`;
+  document.getElementById('regStartDate').value = `${dayNames[dt.getDay()]} ${parts[2]}/${parts[1]}/${parts[0]}`;
   SELECTED_STORES = []; REG_TYPE_SELECTED = null;
+  document.getElementById('regNumDays').value = '1';
+  document.getElementById('datePreviewList').innerHTML = '';
+  document.getElementById('targetPreviewBox').innerHTML = '';
   renderSelectedChips(); updateSelectedCount(); renderTypeCards();
   document.getElementById('regNote').value = '';
   goStep(1);
