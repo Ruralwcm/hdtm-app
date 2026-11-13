@@ -220,31 +220,73 @@ function populateMonthWeekSelectors() {
   });
   document.getElementById('regMonth').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
-  const weeks = [1,2,3,4,5].map(w=>`<option value="W${w}">Tuần ${w}</option>`).join('');
+  updateWeekOptions();
+  document.getElementById('regWeek').addEventListener('change', updateDaysForWeek);
+  document.getElementById('regMonth').addEventListener('change', () => { updateWeekOptions(); updateDaysForWeek(); });
+}
+
+// Số tuần trong tháng (bắt đầu T2), tính toán lại khi đổi tháng
+function updateWeekOptions() {
+  const monthVal = document.getElementById('regMonth').value;
+  if (!monthVal) return;
+  const [y, m] = monthVal.split('-').map(Number);
+  const firstDay = new Date(y, m-1, 1);
+  const firstDow = firstDay.getDay(); // 0=CN, 1=T2, ... 6=T7
+  const daysInMonth = new Date(y, m, 0).getDate();
+
+  // Monday of the week containing day 1
+  const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
+  const week1Monday = 1 + mondayOffset;
+  // Number of weeks = ceil((daysInMonth - week1Monday + 1) / 7)
+  const totalWeeks = Math.ceil((daysInMonth - week1Monday + 1) / 7);
+
+  const weeksHtml = Array.from({length: totalWeeks}, (_, i) => {
+    const mon = week1Monday + i * 7;
+    const sun = Math.min(mon + 6, daysInMonth);
+    const rangeLabel = mon > 0 ? ` (${mon}-${sun}/${m})` : ` (~${sun}/${m})`;
+    return `<option value="W${i+1}">Tuần ${i+1}${rangeLabel}</option>`;
+  }).join('');
+
   ['regWeek','trWeek','rcWeek'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const hasAll = el.innerHTML.includes('Tất cả') || el.innerHTML.includes('Cả tháng');
-    el.innerHTML = (hasAll ? el.innerHTML : '') + weeks;
+    const keep = hasAll ? el.querySelector('option')?.outerHTML || '' : '';
+    el.innerHTML = keep + weeksHtml;
   });
-  updateDaysForWeek();
-  document.getElementById('regWeek').addEventListener('change', updateDaysForWeek);
-  document.getElementById('regMonth').addEventListener('change', updateDaysForWeek);
+  // Keep current week selection if possible
+  const regWeek = document.getElementById('regWeek');
+  if (regWeek && parseInt(regWeek.value?.replace('W','')) > totalWeeks) {
+    regWeek.value = 'W1';
+  }
 }
 
 function updateDaysForWeek() {
   const monthVal = document.getElementById('regMonth').value;
-  const [y,m] = monthVal.split('-').map(Number);
-  const weekNum = parseInt(document.getElementById('regWeek').value.replace('W',''))||1;
+  if (!monthVal) return;
+  const [y, m] = monthVal.split('-').map(Number);
+  const weekNum = parseInt(document.getElementById('regWeek').value.replace('W','')) || 1;
   const firstDay = new Date(y, m-1, 1);
-  // Simple week split: week N = days (N-1)*7+1 .. N*7 of month (bounded)
+  const firstDow = firstDay.getDay(); // 0=CN, 1=T2, ... 6=T7
   const daysInMonth = new Date(y, m, 0).getDate();
-  const start = (weekNum-1)*7+1;
-  const end = Math.min(weekNum*7, daysInMonth);
+
+  // Monday of the week containing day 1
+  const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
+  const mondayDate = 1 + mondayOffset + (weekNum - 1) * 7;
+  const sundayDate = mondayDate + 6;
+
+  // Only days within the month
+  const start = Math.max(1, mondayDate);
+  const end = Math.min(daysInMonth, sundayDate);
+
   const dayNames = ['CN','T2','T3','T4','T5','T6','T7'];
   const sel = document.getElementById('regDay');
   sel.innerHTML = '';
-  for (let d=start; d<=end; d++) {
+  if (start > end || start > daysInMonth) {
+    sel.innerHTML = '<option value="">— Không có ngày trong tháng —</option>';
+    return;
+  }
+  for (let d = start; d <= end; d++) {
     const dateObj = new Date(y, m-1, d);
     const label = `${dayNames[dateObj.getDay()]} - ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
     sel.insertAdjacentHTML('beforeend', `<option value="${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}">${label}</option>`);
@@ -887,15 +929,27 @@ function renderCalendar() {
 
 // ===== CALENDAR CLICK → REGISTER =====
 function calRegister(dateStr) {
-  // Pre-fill ngày
-  document.getElementById('regDay').value = dateStr;
-  // Parse month from dateStr
   const parts = dateStr.split('-');
   if (parts.length === 3) {
-    document.getElementById('regMonth').value = parts[0] + '-' + parts[1];
-    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
-    const weekOfMonth = Math.ceil(d.getDate() / 7);
-    document.getElementById('regWeek').value = 'W' + weekOfMonth;
+    const y = parseInt(parts[0]), m = parseInt(parts[1]), day = parseInt(parts[2]);
+    const monthVal = parts[0] + '-' + parts[1];
+    document.getElementById('regMonth').value = monthVal;
+    updateWeekOptions(); // refresh week dropdown for this month (T2-based)
+
+    // Compute week number (Monday-based)
+    const firstDay = new Date(y, m-1, 1);
+    const firstDow = firstDay.getDay(); // 0=CN, 1=T2
+    const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
+    const week1Monday = 1 + mondayOffset;
+    let weekNum = Math.ceil((day - week1Monday + 1) / 7);
+    if (weekNum < 1) weekNum = 1; // in case day falls before week1 (first days of month)
+    // Check if weekNum option exists, if not clamp
+    const regWeek = document.getElementById('regWeek');
+    const maxWeek = regWeek.querySelectorAll('option').length - (regWeek.querySelector('option[value=""]') ? 1 : 0);
+    if (weekNum > maxWeek) weekNum = maxWeek;
+    document.getElementById('regWeek').value = 'W' + weekNum;
+    updateDaysForWeek(); // refresh day options
+    document.getElementById('regDay').value = dateStr;
   }
   SELECTED_STORES = []; REG_TYPE_SELECTED = null;
   renderSelectedChips(); updateSelectedCount(); renderTypeCards();
