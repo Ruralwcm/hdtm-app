@@ -147,54 +147,35 @@ function populateCascadingFilters() {
     miens.forEach(m => el.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`));
   });
 
-  // cascading for registration step 2
+  // Simplified cascade: Miền → GĐV → QLKV (registration modal)
   const regMien = document.getElementById('regMien');
-  const regTinh = document.getElementById('regTinh');
-  const regHuyen = document.getElementById('regHuyen');
-  const regQlkv = document.getElementById('regQlkv');
   const regGdv = document.getElementById('regGdv');
+  const regQlkv = document.getElementById('regQlkv');
 
-  regMien.addEventListener('change', () => cascadeUpdate('tinh'));
-  regTinh.addEventListener('change', () => cascadeUpdate('huyen'));
-  regHuyen.addEventListener('change', () => cascadeUpdate('qlkv'));
-  regQlkv.addEventListener('change', () => cascadeUpdate('gdv'));
-  regGdv.addEventListener('change', () => renderStoreList());
-  [regMien, regTinh, regHuyen, regQlkv].forEach(el => el.addEventListener('change', renderStoreList));
+  regMien.addEventListener('change', () => cascadeUpdate('gdv'));
+  regGdv.addEventListener('change', () => cascadeUpdate('qlkv'));
+  regQlkv.addEventListener('change', () => renderStoreList());
+  [regMien, regGdv].forEach(el => { if(el) el.addEventListener('change', renderStoreList); });
 
   function cascadeUpdate(level) {
-    const mien = regMien.value, tinh = regTinh.value, huyen = regHuyen.value, qlkv = regQlkv.value;
+    const mien = regMien ? regMien.value : '';
+    const gdv = regGdv ? regGdv.value : '';
     let filtered = ALL_STORES;
     if (mien) filtered = filtered.filter(s => s.mien === mien);
-    if (level === 'tinh' || level === 'huyen' || level === 'qlkv' || level === 'gdv') {
-      if (level === 'tinh') {
-        regTinh.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(filtered,'tinh').map(t=>`<option value="${t}">${t}</option>`).join('');
-        regHuyen.innerHTML = '<option value="">— Tất cả —</option>';
-        regQlkv.innerHTML = '<option value="">— Tất cả —</option>';
-        regGdv.innerHTML = '<option value="">— Tất cả —</option>';
+    if (level === 'gdv' || level === 'qlkv') {
+      if (level === 'gdv' && regGdv) {
+        regGdv.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(filtered,'gdv').map(g=>`<option value="${g}">${g}</option>`).join('');
+        if (regQlkv) regQlkv.innerHTML = '<option value="">— Tất cả —</option>';
       }
     }
-    if (tinh) filtered = filtered.filter(s => s.tinh === tinh);
-    if (level === 'huyen' || level === 'qlkv' || level === 'gdv') {
-      if (level === 'huyen') {
-        regHuyen.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(filtered,'huyen').map(h=>`<option value="${h}">${h}</option>`).join('');
-        regQlkv.innerHTML = '<option value="">— Tất cả —</option>';
-        regGdv.innerHTML = '<option value="">— Tất cả —</option>';
-      }
-    }
-    if (huyen) filtered = filtered.filter(s => s.huyen === huyen);
-    if (level === 'qlkv' || level === 'gdv') {
-      if (level === 'qlkv') {
-        regQlkv.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(filtered,'qlkv').map(q=>`<option value="${q}">${q}</option>`).join('');
-        regGdv.innerHTML = '<option value="">— Tất cả —</option>';
-      }
-    }
-    if (qlkv) filtered = filtered.filter(s => s.qlkv === qlkv);
-    if (level === 'gdv') {
-      regGdv.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(filtered,'gdv').map(g=>`<option value="${g}">${g}</option>`).join('');
+    if (gdv) filtered = filtered.filter(s => s.gdv === gdv);
+    if (level === 'qlkv' && regQlkv) {
+      regQlkv.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(filtered,'qlkv').map(q=>`<option value="${q}">${q}</option>`).join('');
     }
   }
-
-  // tracking/dashboard filters: simple flat qlkv/gdv list
+  // Init GĐV + QLKV dropdowns
+  if (regGdv) regGdv.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(ALL_STORES,'gdv').map(g=>`<option value="${g}">${g}</option>`).join('');
+  if (regQlkv) regQlkv.innerHTML = '<option value="">— Tất cả —</option>' + uniqueVals(ALL_STORES,'qlkv').map(q=>`<option value="${q}">${q}</option>`).join('');
   const qlkvs = uniqueVals(ALL_STORES, 'qlkv');
   const gdvs = uniqueVals(ALL_STORES, 'gdv');
   ['trQlkv','dbQlkv'].forEach(id => {
@@ -353,17 +334,13 @@ document.querySelectorAll('.step-tab').forEach(t => {
 // ===== STEP 3: STORE SELECTION =====
 function getFilteredStoresForReg() {
   const mien = document.getElementById('regMien').value;
-  const tinh = document.getElementById('regTinh').value;
-  const huyen = document.getElementById('regHuyen').value;
-  const qlkv = document.getElementById('regQlkv').value;
   const gdv = document.getElementById('regGdv').value;
+  const qlkv = document.getElementById('regQlkv').value;
   const search = (document.getElementById('storeSearch')?.value || '').toLowerCase();
   return ALL_STORES.filter(s => {
     if (mien && s.mien !== mien) return false;
-    if (tinh && s.tinh !== tinh) return false;
-    if (huyen && s.huyen !== huyen) return false;
-    if (qlkv && s.qlkv !== qlkv) return false;
     if (gdv && s.gdv !== gdv) return false;
+    if (qlkv && s.qlkv !== qlkv) return false;
     if (search && !(s.sap.toLowerCase().includes(search) || s.name.toLowerCase().includes(search))) return false;
     return true;
   });
