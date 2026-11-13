@@ -955,7 +955,7 @@ function calRegister(dateStr) {
   document.getElementById('regNumDays').value = '1';
   document.getElementById('datePreviewList').innerHTML = '';
   document.getElementById('targetPreviewBox').innerHTML = '';
-  renderSelectedChips(); updateSelectedCount(); renderTypeCards();
+  renderSelectedChips(); updateSelectedCount(); renderTypeCards(); renderStoreList();
   document.getElementById('regNote').value = '';
   goStep(1);
   showRegModal();
