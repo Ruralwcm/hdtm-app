@@ -859,19 +859,54 @@ function calNextMonth(){ CAL_MONTH++; if(CAL_MONTH>11){CAL_MONTH=0;CAL_YEAR++;} 
 function renderCalendar() {
   document.getElementById('calMonthLabel').textContent = `Tháng ${CAL_MONTH+1}/${CAL_YEAR}`;
   const firstDay = new Date(CAL_YEAR, CAL_MONTH, 1);
-  const startOffset = firstDay.getDay(); // 0=CN
+  // T2=0, T3=1, ... CN=6
+  const jsDay = firstDay.getDay(); // 0=CN, 1=T2, ..., 6=T7
+  const startOffset = jsDay === 0 ? 6 : jsDay - 1; // offset từ T2
   const daysInMonth = new Date(CAL_YEAR, CAL_MONTH+1, 0).getDate();
-  const dayLabels = ['CN','T2','T3','T4','T5','T6','T7'];
+  const dayLabels = ['T2','T3','T4','T5','T6','T7','CN'];
   let html = dayLabels.map(d=>`<div class="cal-day-label">${d}</div>`).join('');
 
   const monthStr = `${CAL_YEAR}-${String(CAL_MONTH+1).padStart(2,'0')}`;
   for (let i=0;i<startOffset;i++) html += `<div class="cal-cell other-month"></div>`;
+
   for (let d=1; d<=daysInMonth; d++) {
     const dateStr = `${monthStr}-${String(d).padStart(2,'0')}`;
+    const dateObj = new Date(CAL_YEAR, CAL_MONTH, d);
+    const dow = dateObj.getDay(); // 0=CN, 6=T7
+    const isWeekend = (dow === 0 || dow === 6); // CN hoặc T7
     const acts = ACTIVITIES.filter(a => a.plan_date === dateStr && a.status !== 'CANCELLED' && a.status !== 'REPLACED').slice(0,4);
-    html += `<div class="cal-cell"><div class="cal-date">${d}</div>${acts.map(a=>`<div class="cal-activity" onclick="viewActivity('${a.activity_id}')" title="${a.store_name}">${a.type_name||a.type_code} · ${a.sap}</div>`).join('')}</div>`;
+    const weekendClass = isWeekend ? ' weekend' : '';
+    html += `<div class="cal-cell${weekendClass}" onclick="calRegister('${dateStr}')" title="Click để đăng ký HĐTM ngày ${d}/${CAL_MONTH+1}">
+      <div class="cal-date">${d}${dow===0?' CN':dow===6?' T7':''}</div>
+      ${acts.map(a=>`<div class="cal-activity" onclick="event.stopPropagation();viewActivity('${a.activity_id}')" title="${a.store_name}">${a.type_name||a.type_code} · ${a.sap}</div>`).join('')}
+      <div class="cal-add-hint">+ Đăng ký</div>
+    </div>`;
   }
   document.getElementById('calGrid').innerHTML = html;
+}
+
+// ===== CALENDAR CLICK → REGISTER =====
+function calRegister(dateStr) {
+  // Pre-fill ngày
+  document.getElementById('regDay').value = dateStr;
+  // Parse month from dateStr
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    document.getElementById('regMonth').value = parts[0] + '-' + parts[1];
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    const weekOfMonth = Math.ceil(d.getDate() / 7);
+    document.getElementById('regWeek').value = 'W' + weekOfMonth;
+  }
+  SELECTED_STORES = []; REG_TYPE_SELECTED = null;
+  renderSelectedChips(); updateSelectedCount(); renderTypeCards();
+  document.getElementById('regNote').value = '';
+  goStep(1);
+  // Navigate to đăng ký view
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelector('.nav-item[data-view="register"]').classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-register').classList.add('active');
+  document.getElementById('viewTitle').textContent = '📝 Đăng ký HĐTM';
 }
 
 // ===== TARGET MANAGEMENT =====
