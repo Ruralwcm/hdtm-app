@@ -514,7 +514,8 @@ async function submitRegistration() {
   renderSelectedChips(); updateSelectedCount(); renderTypeCards();
   document.getElementById('regNote').value = '';
   goStep(1);
-  loadDashboard(); loadTracking(1);
+  closeRegModal();
+  loadDashboard(); loadTracking(1); renderCalendar();
 }
 
 // ===== DASHBOARD =====
@@ -934,34 +935,30 @@ function calRegister(dateStr) {
     const y = parseInt(parts[0]), m = parseInt(parts[1]), day = parseInt(parts[2]);
     const monthVal = parts[0] + '-' + parts[1];
     document.getElementById('regMonth').value = monthVal;
-    updateWeekOptions(); // refresh week dropdown for this month (T2-based)
-
-    // Compute week number (Monday-based)
+    updateWeekOptions();
     const firstDay = new Date(y, m-1, 1);
-    const firstDow = firstDay.getDay(); // 0=CN, 1=T2
+    const firstDow = firstDay.getDay();
     const mondayOffset = firstDow === 0 ? -6 : -(firstDow - 1);
     const week1Monday = 1 + mondayOffset;
     let weekNum = Math.ceil((day - week1Monday + 1) / 7);
-    if (weekNum < 1) weekNum = 1; // in case day falls before week1 (first days of month)
-    // Check if weekNum option exists, if not clamp
+    if (weekNum < 1) weekNum = 1;
     const regWeek = document.getElementById('regWeek');
     const maxWeek = regWeek.querySelectorAll('option').length - (regWeek.querySelector('option[value=""]') ? 1 : 0);
     if (weekNum > maxWeek) weekNum = maxWeek;
     document.getElementById('regWeek').value = 'W' + weekNum;
-    updateDaysForWeek(); // refresh day options
+    updateDaysForWeek();
     document.getElementById('regDay').value = dateStr;
   }
   SELECTED_STORES = []; REG_TYPE_SELECTED = null;
   renderSelectedChips(); updateSelectedCount(); renderTypeCards();
   document.getElementById('regNote').value = '';
   goStep(1);
-  // Navigate to đăng ký view
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelector('.nav-item[data-view="register"]').classList.add('active');
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-register').classList.add('active');
-  document.getElementById('viewTitle').textContent = '📝 Đăng ký HĐTM';
+  showRegModal();
 }
+
+function showRegModal(){ document.getElementById('regModalOverlay').classList.add('show'); }
+function closeRegModal(){ document.getElementById('regModalOverlay').classList.remove('show'); }
+document.getElementById('regModalOverlay').addEventListener('click', e => { if(e.target.id==='regModalOverlay') closeRegModal(); });
 
 // ===== TARGET MANAGEMENT =====
 async function loadTargetTable() {
